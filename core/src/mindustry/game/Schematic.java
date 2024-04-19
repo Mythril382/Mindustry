@@ -68,6 +68,10 @@ public class Schematic implements Publishable, Comparable<Schematic>{
         return tags.get("description", "");
     }
 
+    public String background(){
+        return tags.get("background", "metal-floor");
+    }
+
     public void save(){
         schematics.saveChanges(this);
     }
