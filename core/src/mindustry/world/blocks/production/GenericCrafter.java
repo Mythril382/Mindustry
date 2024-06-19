@@ -40,7 +40,10 @@ public class GenericCrafter extends Block{
     public Effect craftEffect = Fx.none;
     public Effect updateEffect = Fx.none;
     public float updateEffectChance = 0.04f;
+    /** range of updateEffect, set <0 to use block size */
+    public float updateEffectRange = -1f;
     public float warmupSpeed = 0.019f;
+    
     /** Only used for legacy cultivator blocks. */
     public boolean legacyReadWarmup = false;
 
@@ -233,7 +236,7 @@ public class GenericCrafter extends Block{
                 }
 
                 if(wasVisible && Mathf.chanceDelta(updateEffectChance)){
-                    updateEffect.at(x + Mathf.range(size * 4f), y + Mathf.range(size * 4));
+                    updateEffect.at(x + Mathf.range(updateEffectRange < 0 ? size * 4f : updateEffectRange), y + Mathf.range(updateEffectRange < 0 ? size * 4f : updateEffectRange));
                 }
             }else{
                 warmup = Mathf.approachDelta(warmup, 0f, warmupSpeed);
