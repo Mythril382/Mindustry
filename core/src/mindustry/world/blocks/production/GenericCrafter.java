@@ -1,5 +1,6 @@
 package mindustry.world.blocks.production;
 
+import arc.audio.*;
 import arc.graphics.g2d.*;
 import arc.math.*;
 import arc.math.geom.*;
@@ -42,6 +43,7 @@ public class GenericCrafter extends Block{
     public float updateEffectChance = 0.04f;
     /** range of updateEffect, set <0 to use block size */
     public float updateEffectRange = -1f;
+    public Sound craftSound = Sounds.none;
     public float warmupSpeed = 0.019f;
     
     /** Only used for legacy cultivator blocks. */
@@ -301,6 +303,8 @@ public class GenericCrafter extends Block{
             if(wasVisible){
                 craftEffect.at(x, y);
             }
+            craftSound.at(x, y);
+
             progress %= 1f;
         }
 
