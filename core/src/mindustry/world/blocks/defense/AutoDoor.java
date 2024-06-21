@@ -27,6 +27,7 @@ public class AutoDoor extends Wall{
     public Effect openfx = Fx.dooropen;
     public Effect closefx = Fx.doorclose;
     public Sound doorSound = Sounds.door;
+    public Sound doorCloseSound = Sounds.door;
     public @Load("@-open") TextureRegion openRegion;
     public float triggerMargin = 12f;
 
@@ -79,8 +80,8 @@ public class AutoDoor extends Wall{
             pathfinder.updateTile(tile);
             if(wasVisible){
                 (!open ? closefx : openfx).at(this, size);
-                doorSound.at(this);
             }
+            (!open ? doorCloseSound : doorSound).at(this);
         }
 
         @Override
