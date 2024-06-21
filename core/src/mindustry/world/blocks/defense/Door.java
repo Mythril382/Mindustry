@@ -26,6 +26,7 @@ public class Door extends Wall{
     public Effect openfx = Fx.dooropen;
     public Effect closefx = Fx.doorclose;
     public Sound doorSound = Sounds.door;
+    public Sound doorCloseSound = Sounds.door;
     public @Load("@-open") TextureRegion openRegion;
 
     public Door(String name){
@@ -35,7 +36,7 @@ public class Door extends Wall{
         consumesTap = true;
 
         config(Boolean.class, (DoorBuild base, Boolean open) -> {
-            doorSound.at(base);
+            base.sound();
             base.effect();
 
             for(DoorBuild entity : base.chained){
@@ -97,6 +98,10 @@ public class Door extends Wall{
 
         public DoorBuild origin(){
             return chained.isEmpty() ? this : chained.first();
+        }
+
+        public void sound(){
+            (open ? doorCloseSound : doorSound).at(this);
         }
 
         public void effect(){
