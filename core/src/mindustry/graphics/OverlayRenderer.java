@@ -241,7 +241,9 @@ public class OverlayRenderer{
             Draw.reset();
 
             Building build = world.buildWorld(v.x, v.y);
-            if(input.canDropItem() && build != null && build.interactable(player.team()) && build.acceptStack(player.unit().item(), player.unit().stack.amount, player.unit()) > 0 && player.within(build, itemTransferRange)){
+            if(input.canDropItem() && build != null && build.interactable(player.team()) && build.acceptStack(player.unit().item(), player.unit().stack.amount, player.unit()) > 0 && player.within(build, itemTransferRange) &&
+                input.itemDepositCooldown <= 0f){
+
                 boolean invalid = (state.rules.onlyDepositCore && !(build instanceof CoreBuild));
 
                 Lines.stroke(3f, Pal.gray);
@@ -258,8 +260,9 @@ public class OverlayRenderer{
     }
 
     public void checkApplySelection(Unit u){
-        if(unitFade > 0 && lastSelect == u){
-            Draw.mixcol(Pal.accent, unitFade);
+        if(unitFade > 0.001f && lastSelect == u){
+            Color prev = Draw.getMixColor();
+            Draw.mixcol(prev.a > 0.001f ? prev.lerp(Pal.accent, unitFade) : Pal.accent, Math.max(unitFade, prev.a));
         }
     }
 

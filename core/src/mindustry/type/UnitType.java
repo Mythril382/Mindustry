@@ -141,8 +141,10 @@ public class UnitType extends UnlockableContent implements Senseable{
 
     /** if true, this unit counts as an enemy in the wave counter (usually false for support-only units) */
     public boolean isEnemy = true,
-    /** If true, the unit is always at elevation 1. */
+    /** if true, the unit is always at elevation 1 */
     flying = false,
+    /** whether this flying unit should wobble around */
+    wobble = true,
     /** whether this unit tries to attack air units */
     targetAir = true,
     /** whether this unit tries to attack ground units */
@@ -257,6 +259,8 @@ public class UnitType extends UnlockableContent implements Senseable{
     public Color healColor = Pal.heal;
     /** Color of light that this unit produces when lighting is enabled in the map. */
     public Color lightColor = Pal.powerLight;
+    /** override for unit shield colour. */
+    public @Nullable Color shieldColor;
     /** sound played when this unit explodes (*not* when it is shot down) */
     public Sound deathSound = Sounds.bang;
     /** sound played on loop when this unit is around. */
@@ -429,7 +433,8 @@ public class UnitType extends UnlockableContent implements Senseable{
 
     //(undocumented, you shouldn't need to use these, and if you do just check how they're drawn and copy that)
     public TextureRegion baseRegion, legRegion, region, previewRegion, shadowRegion, cellRegion, itemCircleRegion,
-        softShadowRegion, jointRegion, footRegion, legBaseRegion, baseJointRegion, outlineRegion, treadRegion;
+        softShadowRegion, jointRegion, footRegion, legBaseRegion, baseJointRegion, outlineRegion, treadRegion,
+        mineLaserRegion, mineLaserEndRegion;
     public TextureRegion[] wreckRegions, segmentRegions, segmentOutlineRegions;
     public TextureRegion[][] treadRegions;
 
@@ -823,6 +828,10 @@ public class UnitType extends UnlockableContent implements Senseable{
 
             if(canBoost){
                 cmds.add(UnitCommand.boostCommand);
+
+                if(buildSpeed > 0f){
+                    cmds.add(UnitCommand.rebuildCommand, UnitCommand.assistCommand);
+                }
             }
 
             //healing, mining and building is only supported for flying units; pathfinding to ambiguously reachable locations is hard.
@@ -849,7 +858,7 @@ public class UnitType extends UnlockableContent implements Senseable{
         if(stances.length == 0){
             if(canAttack){
                 Seq<UnitStance> seq = Seq.with(UnitStance.stop, UnitStance.shoot, UnitStance.holdFire, UnitStance.pursueTarget, UnitStance.patrol);
-                if(crushDamage > 0){
+                if(!flying){
                     seq.add(UnitStance.ram);
                 }
                 stances = seq.toArray(UnitStance.class);
@@ -917,6 +926,9 @@ public class UnitType extends UnlockableContent implements Senseable{
         legBaseRegion = Core.atlas.find(name + "-leg-base", name + "-leg");
         baseRegion = Core.atlas.find(name + "-base");
         cellRegion = Core.atlas.find(name + "-cell", Core.atlas.find("power-cell"));
+
+        mineLaserRegion = Core.atlas.find("minelaser");
+        mineLaserEndRegion = Core.atlas.find("minelaser-end");
         //when linear filtering is on, it's acceptable to use the relatively low-res 'particle' region
         softShadowRegion =
             squareShape ? Core.atlas.find("square-shadow") :
@@ -1190,10 +1202,12 @@ public class UnitType extends UnlockableContent implements Senseable{
 
     //region drawing
 
-
-    /** Set up drawing state before calling! e.g. drawingPayload */
     public void draw(Unit unit){
         if(unit.inFogTo(Vars.player.team())) return;
+
+        unit.drawBuilding();
+
+        drawMining(unit);
 
         boolean isPayload = !unit.isAdded();
 
@@ -1297,6 +1311,38 @@ public class UnitType extends UnlockableContent implements Senseable{
 
         Draw.reset();
     }
+        
+    //...where do I put this
+    public Color shieldColor(Unit unit){
+        return shieldColor == null ? unit.team.color : shieldColor;
+    }
+    
+
+    public void drawMining(Unit unit){
+        if(!unit.mining()) return;
+        float focusLen = unit.hitSize / 2f + Mathf.absin(Time.time, 1.1f, 0.5f);
+        float swingScl = 12f, swingMag = tilesize / 8f;
+        float flashScl = 0.3f;
+
+        float px = unit.x + Angles.trnsx(unit.rotation, focusLen);
+        float py = unit.y + Angles.trnsy(unit.rotation, focusLen);
+
+        float ex = unit.mineTile.worldx() + Mathf.sin(Time.time + 48, swingScl, swingMag);
+        float ey = unit.mineTile.worldy() + Mathf.sin(Time.time + 48, swingScl + 2f, swingMag);
+
+        Draw.z(Layer.flyingUnit + 0.1f);
+
+        Draw.color(Color.lightGray, Color.white, 1f - flashScl + Mathf.absin(Time.time, 0.5f, flashScl));
+
+        Drawf.laser(mineLaserRegion, mineLaserEndRegion, px, py, ex, ey, 0.75f);
+
+        if(unit.isLocal()){
+            Lines.stroke(1f, Pal.accent);
+            Lines.poly(unit.mineTile.worldx(), unit.mineTile.worldy(), 4, tilesize / 2f * Mathf.sqrt2, Time.time);
+        }
+
+        Draw.color();
+    }
 
     public <T extends Unit & Payloadc> void drawPayload(T unit){
         if(unit.hasPayload()){
@@ -1311,7 +1357,7 @@ public class UnitType extends UnlockableContent implements Senseable{
         float radius = unit.hitSize() * 1.3f;
         Fill.light(unit.x, unit.y, Lines.circleVertices(radius), radius,
             Color.clear,
-            Tmp.c2.set(unit.team.color).lerp(Color.white, Mathf.clamp(unit.hitTime() / 2f)).a(0.7f * alpha)
+            Tmp.c2.set(unit.type.shieldColor(unit)).lerp(Color.white, Mathf.clamp(unit.hitTime() / 2f)).a(0.7f * alpha)
         );
     }
 
